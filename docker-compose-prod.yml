@@ -1,0 +1,38 @@
+version: '2'
+services:
+  www:
+    build: ./docker/nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - php
+    volumes_from:
+      - data
+  php:
+    build: './docker/php-fpm'
+    volumes_from:
+      - data
+    environment:
+      - APPLICATION_ENVIRONMENT=production
+  cruncher:
+    build: './docker/cruncher'
+    command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+    volumes_from:
+      - data
+    depends_on:
+      - php
+      - rmq
+    environment:
+      - APPLICATION_ENVIRONMENT=production
+  data:
+    build: .
+    volumes:
+      - .:/var/www
+  rmq:
+    image: "rabbitmq:management-alpine"
+    hostname: "rmq"
+    ports:
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=mysecretpasswordhere

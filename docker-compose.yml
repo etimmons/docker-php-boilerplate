@@ -1,0 +1,54 @@
+version: '2'
+services:
+  www:
+    build: ./docker/nginx
+    ports:
+      - "8080:80"
+    depends_on:
+      - php
+    volumes_from:
+      - data
+  php:
+    build: './docker/php-fpm'
+    volumes_from:
+      - data
+    environment:
+      - APPLICATION_ENVIRONMENT=development
+  cruncher:
+    build: './docker/cruncher'
+    # Leave this line commented out for development so scripts don't auto-start
+    #command: ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf"]
+    volumes_from:
+      - data
+    depends_on:
+      - php
+      - rmq
+    environment:
+      - APPLICATION_ENVIRONMENT=development
+  data:
+    build: .
+    volumes:
+      - .:/var/www
+  dev:
+    build: './docker/dev'
+    volumes_from:
+      - data
+    depends_on:
+      - php
+    environment:
+      - APPLICATION_ENVIRONMENT=development
+  mysql:
+    ports:
+      - "3306:3306" # for connecting in navicat, not needed otherwise
+    image: mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=app
+  rmq:
+    image: "rabbitmq:management-alpine"
+    hostname: "rmq"
+    ports:
+      - '15672:15672'
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=password
